@@ -1,0 +1,79 @@
+From f24e004e29cf2e069fb597ae3a738dcaf21cf9e6 Mon Sep 17 00:00:00 2001
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+Date: Sun, 1 Dec 2024 20:33:39 +0100
+Subject: [PATCH 3/5] iplink_can: canxl: support CAN XL transceiver switching
+ in data phase
+
+In the CAN XL data phase the CAN XL controller can advise the CAN XL
+transceiver to switch the physical layer.
+To enable this feature the CAN_CTRLMODE_XL_TRX has to be set in the
+driver control mode.
+
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+---
+ include/uapi/linux/can/netlink.h | 1 +
+ ip/iplink_can.c                  | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/include/uapi/linux/can/netlink.h b/include/uapi/linux/can/netlink.h
+index 19267678..bea58373 100644
+--- a/include/uapi/linux/can/netlink.h
++++ b/include/uapi/linux/can/netlink.h
+@@ -105,10 +105,11 @@ struct can_ctrlmode {
+ #define CAN_CTRLMODE_TDC_MANUAL		0x400	/* FD TDCV is manually set up by user */
+ #define CAN_CTRLMODE_XL			0x800	/* CAN XL mode */
+ #define CAN_CTRLMODE_XL_TDC_AUTO	0x1000	/* XL transceiver automatically calculates TDCV */
+ #define CAN_CTRLMODE_XL_TDC_MANUAL	0x2000	/* XL TDCV is manually set up by user */
+ #define CAN_CTRLMODE_XL_RRS		0x4000	/* XL enable RRS bit access */
++#define CAN_CTRLMODE_XL_TRX		0x8000	/* XL switch trx in data phase */
+ 
+ /*
+  * CAN device statistics
+  */
+ struct can_device_stats {
+diff --git a/ip/iplink_can.c b/ip/iplink_can.c
+index 9fe9ae6c..18854c2b 100644
+--- a/ip/iplink_can.c
++++ b/ip/iplink_can.c
+@@ -41,10 +41,11 @@ static void print_usage(FILE *f)
+ 		"\t[ cc-len8-dlc { on | off } ]\n"
+ 		"\t[ tdc-mode { auto | manual | off } ]\n"
+ 		"\t[ xl { on | off } ]\n"
+ 		"\t[ xtdc-mode { auto | manual | off } ]\n"
+ 		"\t[ xlrrs { on | off } ]\n"
++		"\t[ xltrx { on | off } ]\n"
+ 		"\n"
+ 		"\t[ restart-ms TIME-MS ]\n"
+ 		"\t[ restart ]\n"
+ 		"\n"
+ 		"\t[ termination { 0..65535 } ]\n"
+@@ -125,10 +126,11 @@ static void print_ctrlmode(enum output_type t, __u32 flags, const char* key)
+ 	print_flag(t, &flags, CAN_CTRLMODE_TDC_MANUAL, "TDC-MANUAL");
+ 	print_flag(t, &flags, CAN_CTRLMODE_XL, "XL");
+ 	print_flag(t, &flags, CAN_CTRLMODE_XL_TDC_AUTO, "XL-TDC-AUTO");
+ 	print_flag(t, &flags, CAN_CTRLMODE_XL_TDC_MANUAL, "XL-TDC-MANUAL");
+ 	print_flag(t, &flags, CAN_CTRLMODE_XL_RRS, "XL-RRS");
++	print_flag(t, &flags, CAN_CTRLMODE_XL_TRX, "XL-TRX");
+ 
+ 	if (flags)
+ 		print_hex(t, NULL, "%x", flags);
+ 
+ 	close_json_array(t, "> ");
+@@ -339,10 +341,14 @@ static int can_parse_opt(struct link_util *lu, int argc, char **argv,
+ 			}
+ 		} else if (matches(*argv, "xlrrs") == 0) {
+ 			NEXT_ARG();
+ 			set_ctrlmode("xlrrs", *argv, &cm,
+ 				     CAN_CTRLMODE_XL_RRS);
++		} else if (matches(*argv, "xltrx") == 0) {
++			NEXT_ARG();
++			set_ctrlmode("xltrx", *argv, &cm,
++				     CAN_CTRLMODE_XL_TRX);
+ 		} else if (matches(*argv, "restart") == 0) {
+ 			__u32 val = 1;
+ 
+ 			addattr32(n, 1024, IFLA_CAN_RESTART, val);
+ 		} else if (matches(*argv, "restart-ms") == 0) {
+-- 
+2.47.2
+

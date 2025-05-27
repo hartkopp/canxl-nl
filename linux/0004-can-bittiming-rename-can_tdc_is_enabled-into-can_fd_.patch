@@ -1,0 +1,116 @@
+From 86019da677f9398d345b8123d95d97aa3bf437cc Mon Sep 17 00:00:00 2001
+From: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+Date: Wed, 13 Nov 2024 01:50:19 +0900
+Subject: [PATCH 04/11] can: bittiming: rename can_tdc_is_enabled() into
+ can_fd_tdc_is_enabled()
+
+With the introduction of CAN XL, a new can_xl_tdc_is_enabled() helper
+function will be introduced later on. Rename can_tdc_is_enabled() into
+can_fd_tdc_is_enabled() to make it more explicit that this helper is
+meant for CAN FD.
+
+Signed-off-by: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+---
+ drivers/net/can/dev/netlink.c             | 6 +++---
+ drivers/net/can/usb/etas_es58x/es58x_fd.c | 2 +-
+ drivers/net/can/xilinx_can.c              | 2 +-
+ include/linux/can/dev.h                   | 2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/can/dev/netlink.c b/drivers/net/can/dev/netlink.c
+index 08261cfcf6b2..16b0f326c143 100644
+--- a/drivers/net/can/dev/netlink.c
++++ b/drivers/net/can/dev/netlink.c
+@@ -142,11 +142,11 @@ static int can_tdc_changelink(struct can_priv *priv, const struct nlattr *nla,
+ 	struct nlattr *tb_tdc[IFLA_CAN_TDC_MAX + 1];
+ 	struct can_tdc tdc = { 0 };
+ 	const struct can_tdc_const *tdc_const = priv->fd.tdc_const;
+ 	int err;
+ 
+-	if (!tdc_const || !can_tdc_is_enabled(priv))
++	if (!tdc_const || !can_fd_tdc_is_enabled(priv))
+ 		return -EOPNOTSUPP;
+ 
+ 	err = nla_parse_nested(tb_tdc, IFLA_CAN_TDC_MAX, nla,
+ 			       can_tdc_policy, extack);
+ 	if (err)
+@@ -407,11 +407,11 @@ static size_t can_tdc_get_size(const struct net_device *dev)
+ 	if (priv->fd.tdc_const->tdcf_max) {
+ 		size += nla_total_size(sizeof(u32));	/* IFLA_CAN_TDCF_MIN */
+ 		size += nla_total_size(sizeof(u32));	/* IFLA_CAN_TDCF_MAX */
+ 	}
+ 
+-	if (can_tdc_is_enabled(priv)) {
++	if (can_fd_tdc_is_enabled(priv)) {
+ 		if (priv->ctrlmode & CAN_CTRLMODE_TDC_MANUAL ||
+ 		    priv->fd.do_get_auto_tdcv)
+ 			size += nla_total_size(sizeof(u32));	/* IFLA_CAN_TDCV */
+ 		size += nla_total_size(sizeof(u32));		/* IFLA_CAN_TDCO */
+ 		if (priv->fd.tdc_const->tdcf_max)
+@@ -488,11 +488,11 @@ static int can_tdc_fill_info(struct sk_buff *skb, const struct net_device *dev)
+ 	if (tdc_const->tdcf_max &&
+ 	    (nla_put_u32(skb, IFLA_CAN_TDC_TDCF_MIN, tdc_const->tdcf_min) ||
+ 	     nla_put_u32(skb, IFLA_CAN_TDC_TDCF_MAX, tdc_const->tdcf_max)))
+ 		goto err_cancel;
+ 
+-	if (can_tdc_is_enabled(priv)) {
++	if (can_fd_tdc_is_enabled(priv)) {
+ 		u32 tdcv;
+ 		int err = -EINVAL;
+ 
+ 		if (priv->ctrlmode & CAN_CTRLMODE_TDC_MANUAL) {
+ 			tdcv = tdc->tdcv;
+diff --git a/drivers/net/can/usb/etas_es58x/es58x_fd.c b/drivers/net/can/usb/etas_es58x/es58x_fd.c
+index d924b053677b..6476add1c105 100644
+--- a/drivers/net/can/usb/etas_es58x/es58x_fd.c
++++ b/drivers/net/can/usb/etas_es58x/es58x_fd.c
+@@ -427,11 +427,11 @@ static int es58x_fd_enable_channel(struct es58x_priv *priv)
+ 
+ 	if (tx_conf_msg.canfd_enabled) {
+ 		es58x_fd_convert_bittiming(&tx_conf_msg.data_bittiming,
+ 					   &priv->can.fd.data_bittiming);
+ 
+-		if (can_tdc_is_enabled(&priv->can)) {
++		if (can_fd_tdc_is_enabled(&priv->can)) {
+ 			tx_conf_msg.tdc_enabled = 1;
+ 			tx_conf_msg.tdco = cpu_to_le16(priv->can.fd.tdc.tdco);
+ 			tx_conf_msg.tdcf = cpu_to_le16(priv->can.fd.tdc.tdcf);
+ 		}
+ 
+diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.c
+index 3f2e378199ab..81baec8eb1e5 100644
+--- a/drivers/net/can/xilinx_can.c
++++ b/drivers/net/can/xilinx_can.c
+@@ -513,11 +513,11 @@ static int xcan_set_bittiming(struct net_device *ndev)
+ 
+ 	if (priv->devtype.cantype == XAXI_CANFD ||
+ 	    priv->devtype.cantype == XAXI_CANFD_2_0) {
+ 		/* Setting Baud Rate prescaler value in F_BRPR Register */
+ 		btr0 = dbt->brp - 1;
+-		if (can_tdc_is_enabled(&priv->can)) {
++		if (can_fd_tdc_is_enabled(&priv->can)) {
+ 			if (priv->devtype.cantype == XAXI_CANFD)
+ 				btr0 |= FIELD_PREP(XCAN_BRPR_TDCO_MASK, priv->can.fd.tdc.tdco) |
+ 					XCAN_BRPR_TDC_ENABLE;
+ 			else
+ 				btr0 |= FIELD_PREP(XCAN_2_BRPR_TDCO_MASK, priv->can.fd.tdc.tdco) |
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index e492dfa8a472..9a92cbe5b2cb 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -89,11 +89,11 @@ struct can_priv {
+ 			    enum can_state *state);
+ 	int (*do_get_berr_counter)(const struct net_device *dev,
+ 				   struct can_berr_counter *bec);
+ };
+ 
+-static inline bool can_tdc_is_enabled(const struct can_priv *priv)
++static inline bool can_fd_tdc_is_enabled(const struct can_priv *priv)
+ {
+ 	return !!(priv->ctrlmode & CAN_CTRLMODE_FD_TDC_MASK);
+ }
+ 
+ /*
+-- 
+2.47.2
+

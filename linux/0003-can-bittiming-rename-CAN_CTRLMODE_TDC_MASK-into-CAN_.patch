@@ -1,0 +1,133 @@
+From cd5e890f6561a25a4604e3dad23fb980a9bae760 Mon Sep 17 00:00:00 2001
+From: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+Date: Wed, 13 Nov 2024 01:50:18 +0900
+Subject: [PATCH 03/11] can: bittiming: rename CAN_CTRLMODE_TDC_MASK into
+ CAN_CTRLMODE_FD_TDC_MASK
+
+With the introduction of CAN XL, a new CAN_CTRLMODE_XL_TDC_MASK will
+be introduced later on. Because CAN_CTRLMODE_TDC_MASK is not part of
+the uapi, rename it to CAN_CTRLMODE_FD_TDC_MASK to make it more
+explicit that this mask is meant for CAN FD.
+
+Signed-off-by: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+---
+ drivers/net/can/dev/calc_bittiming.c |  2 +-
+ drivers/net/can/dev/netlink.c        | 12 ++++++------
+ include/linux/can/bittiming.h        |  2 +-
+ include/linux/can/dev.h              |  2 +-
+ 4 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/can/dev/calc_bittiming.c b/drivers/net/can/dev/calc_bittiming.c
+index 3809c148fb88..a94bd67c670c 100644
+--- a/drivers/net/can/dev/calc_bittiming.c
++++ b/drivers/net/can/dev/calc_bittiming.c
+@@ -177,11 +177,11 @@ void can_calc_tdco(struct can_tdc *tdc, const struct can_tdc_const *tdc_const,
+ 
+ {
+ 	if (!tdc_const || !(ctrlmode_supported & CAN_CTRLMODE_TDC_AUTO))
+ 		return;
+ 
+-	*ctrlmode &= ~CAN_CTRLMODE_TDC_MASK;
++	*ctrlmode &= ~CAN_CTRLMODE_FD_TDC_MASK;
+ 
+ 	/* As specified in ISO 11898-1 section 11.3.3 "Transmitter
+ 	 * delay compensation" (TDC) is only applicable if data BRP is
+ 	 * one or two.
+ 	 */
+diff --git a/drivers/net/can/dev/netlink.c b/drivers/net/can/dev/netlink.c
+index 4ebd5181aea9..08261cfcf6b2 100644
+--- a/drivers/net/can/dev/netlink.c
++++ b/drivers/net/can/dev/netlink.c
+@@ -65,16 +65,16 @@ static int can_validate(struct nlattr *tb[], struct nlattr *data[],
+ 	if (!data)
+ 		return 0;
+ 
+ 	if (data[IFLA_CAN_CTRLMODE]) {
+ 		struct can_ctrlmode *cm = nla_data(data[IFLA_CAN_CTRLMODE]);
+-		u32 tdc_flags = cm->flags & CAN_CTRLMODE_TDC_MASK;
++		u32 tdc_flags = cm->flags & CAN_CTRLMODE_FD_TDC_MASK;
+ 
+ 		is_can_fd = cm->flags & cm->mask & CAN_CTRLMODE_FD;
+ 
+ 		/* CAN_CTRLMODE_TDC_{AUTO,MANUAL} are mutually exclusive */
+-		if (tdc_flags == CAN_CTRLMODE_TDC_MASK)
++		if (tdc_flags == CAN_CTRLMODE_FD_TDC_MASK)
+ 			return -EOPNOTSUPP;
+ 		/* If one of the CAN_CTRLMODE_TDC_* flag is set then
+ 		 * TDC must be set and vice-versa
+ 		 */
+ 		if (!!tdc_flags != !!data[IFLA_CAN_TDC])
+@@ -228,20 +228,20 @@ static int can_changelink(struct net_device *dev, struct nlattr *tb[],
+ 			dev->mtu = CANFD_MTU;
+ 		} else {
+ 			dev->mtu = CAN_MTU;
+ 			memset(&priv->fd.data_bittiming, 0,
+ 			       sizeof(priv->fd.data_bittiming));
+-			priv->ctrlmode &= ~CAN_CTRLMODE_TDC_MASK;
++			priv->ctrlmode &= ~CAN_CTRLMODE_FD_TDC_MASK;
+ 			memset(&priv->fd.tdc, 0, sizeof(priv->fd.tdc));
+ 		}
+ 
+-		tdc_mask = cm->mask & CAN_CTRLMODE_TDC_MASK;
++		tdc_mask = cm->mask & CAN_CTRLMODE_FD_TDC_MASK;
+ 		/* CAN_CTRLMODE_TDC_{AUTO,MANUAL} are mutually
+ 		 * exclusive: make sure to turn the other one off
+ 		 */
+ 		if (tdc_mask)
+-			priv->ctrlmode &= cm->flags | ~CAN_CTRLMODE_TDC_MASK;
++			priv->ctrlmode &= cm->flags | ~CAN_CTRLMODE_FD_TDC_MASK;
+ 	}
+ 
+ 	if (data[IFLA_CAN_BITTIMING]) {
+ 		struct can_bittiming bt;
+ 
+@@ -337,11 +337,11 @@ static int can_changelink(struct net_device *dev, struct nlattr *tb[],
+ 		if (data[IFLA_CAN_TDC]) {
+ 			/* TDC parameters are provided: use them */
+ 			err = can_tdc_changelink(priv, data[IFLA_CAN_TDC],
+ 						 extack);
+ 			if (err) {
+-				priv->ctrlmode &= ~CAN_CTRLMODE_TDC_MASK;
++				priv->ctrlmode &= ~CAN_CTRLMODE_FD_TDC_MASK;
+ 				return err;
+ 			}
+ 		} else if (!tdc_mask) {
+ 			/* Neither of TDC parameters nor TDC flags are
+ 			 * provided: do calculation
+diff --git a/include/linux/can/bittiming.h b/include/linux/can/bittiming.h
+index 9b8a9c39614b..5dfdbb63b1d5 100644
+--- a/include/linux/can/bittiming.h
++++ b/include/linux/can/bittiming.h
+@@ -12,11 +12,11 @@
+ #define CAN_SYNC_SEG 1
+ 
+ #define CAN_BITRATE_UNSET 0
+ #define CAN_BITRATE_UNKNOWN (-1U)
+ 
+-#define CAN_CTRLMODE_TDC_MASK					\
++#define CAN_CTRLMODE_FD_TDC_MASK				\
+ 	(CAN_CTRLMODE_TDC_AUTO | CAN_CTRLMODE_TDC_MANUAL)
+ 
+ /*
+  * struct can_tdc - CAN FD Transmission Delay Compensation parameters
+  *
+diff --git a/include/linux/can/dev.h b/include/linux/can/dev.h
+index 492d23bec7be..e492dfa8a472 100644
+--- a/include/linux/can/dev.h
++++ b/include/linux/can/dev.h
+@@ -91,11 +91,11 @@ struct can_priv {
+ 				   struct can_berr_counter *bec);
+ };
+ 
+ static inline bool can_tdc_is_enabled(const struct can_priv *priv)
+ {
+-	return !!(priv->ctrlmode & CAN_CTRLMODE_TDC_MASK);
++	return !!(priv->ctrlmode & CAN_CTRLMODE_FD_TDC_MASK);
+ }
+ 
+ /*
+  * can_get_relative_tdco() - TDCO relative to the sample point
+  *
+-- 
+2.47.2
+

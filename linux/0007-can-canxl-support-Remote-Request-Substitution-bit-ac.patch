@@ -1,0 +1,37 @@
+From c2c9a6a6199aa9fc29caa35ed92267b79858aa2a Mon Sep 17 00:00:00 2001
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+Date: Fri, 16 May 2025 19:30:31 +0200
+Subject: [PATCH 07/11] can: canxl: support Remote Request Substitution bit
+ access
+
+The Remote Request Substitution bit is a dominant bit ("0") in the CAN XL
+frame. As some CAN XL controllers support to access this bit a new
+CANXL_RRS value has been defined for the canxl_frame.flags element.
+
+To read/write the Remote Request Substitution (RRS) bit in the CAN XL
+frame the CAN_CTRLMODE_XL_RRS has to be enabled in CAN driver.
+
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+---
+ include/uapi/linux/can/netlink.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/uapi/linux/can/netlink.h b/include/uapi/linux/can/netlink.h
+index f4fb8eea8f35..55b8374ab094 100644
+--- a/include/uapi/linux/can/netlink.h
++++ b/include/uapi/linux/can/netlink.h
+@@ -104,10 +104,11 @@ struct can_ctrlmode {
+ #define CAN_CTRLMODE_TDC_AUTO		0x200	/* FD transceiver automatically calculates TDCV */
+ #define CAN_CTRLMODE_TDC_MANUAL		0x400	/* FD TDCV is manually set up by user */
+ #define CAN_CTRLMODE_XL			0x800	/* CAN XL mode */
+ #define CAN_CTRLMODE_XL_TDC_AUTO	0x1000	/* XL transceiver automatically calculates TDCV */
+ #define CAN_CTRLMODE_XL_TDC_MANUAL	0x2000	/* XL TDCV is manually set up by user */
++#define CAN_CTRLMODE_XL_RRS		0x4000	/* XL enable RRS bit access */
+ 
+ /*
+  * CAN device statistics
+  */
+ struct can_device_stats {
+-- 
+2.47.2
+

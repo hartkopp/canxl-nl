@@ -1,0 +1,81 @@
+From 6f988bb8fe674a78866d672d099184e53e151bc7 Mon Sep 17 00:00:00 2001
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+Date: Sun, 1 Dec 2024 20:24:43 +0100
+Subject: [PATCH 2/5] iplink_can: canxl: support Remote Request Substitution
+ bit access
+
+The Remote Request Substitution bit is a dominant bit ("0") in the CAN XL
+frame. As some CAN XL controllers support to access this bit a new
+CANXL_RRS value has been defined for the canxl_frame.flags element.
+
+To read/write the Remote Request Substitution (RRS) bit in the CAN XL
+frame the CAN_CTRLMODE_XL_RRS has to be enabled in CAN driver.
+
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+---
+ include/uapi/linux/can/netlink.h | 1 +
+ ip/iplink_can.c                  | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/include/uapi/linux/can/netlink.h b/include/uapi/linux/can/netlink.h
+index 416e2feb..19267678 100644
+--- a/include/uapi/linux/can/netlink.h
++++ b/include/uapi/linux/can/netlink.h
+@@ -104,10 +104,11 @@ struct can_ctrlmode {
+ #define CAN_CTRLMODE_TDC_AUTO		0x200	/* FD transceiver automatically calculates TDCV */
+ #define CAN_CTRLMODE_TDC_MANUAL		0x400	/* FD TDCV is manually set up by user */
+ #define CAN_CTRLMODE_XL			0x800	/* CAN XL mode */
+ #define CAN_CTRLMODE_XL_TDC_AUTO	0x1000	/* XL transceiver automatically calculates TDCV */
+ #define CAN_CTRLMODE_XL_TDC_MANUAL	0x2000	/* XL TDCV is manually set up by user */
++#define CAN_CTRLMODE_XL_RRS		0x4000	/* XL enable RRS bit access */
+ 
+ /*
+  * CAN device statistics
+  */
+ struct can_device_stats {
+diff --git a/ip/iplink_can.c b/ip/iplink_can.c
+index 8dc9229b..9fe9ae6c 100644
+--- a/ip/iplink_can.c
++++ b/ip/iplink_can.c
+@@ -40,10 +40,11 @@ static void print_usage(FILE *f)
+ 		"\t[ presume-ack { on | off } ]\n"
+ 		"\t[ cc-len8-dlc { on | off } ]\n"
+ 		"\t[ tdc-mode { auto | manual | off } ]\n"
+ 		"\t[ xl { on | off } ]\n"
+ 		"\t[ xtdc-mode { auto | manual | off } ]\n"
++		"\t[ xlrrs { on | off } ]\n"
+ 		"\n"
+ 		"\t[ restart-ms TIME-MS ]\n"
+ 		"\t[ restart ]\n"
+ 		"\n"
+ 		"\t[ termination { 0..65535 } ]\n"
+@@ -123,10 +124,11 @@ static void print_ctrlmode(enum output_type t, __u32 flags, const char* key)
+ 	print_flag(t, &flags, CAN_CTRLMODE_TDC_AUTO, "TDC-AUTO");
+ 	print_flag(t, &flags, CAN_CTRLMODE_TDC_MANUAL, "TDC-MANUAL");
+ 	print_flag(t, &flags, CAN_CTRLMODE_XL, "XL");
+ 	print_flag(t, &flags, CAN_CTRLMODE_XL_TDC_AUTO, "XL-TDC-AUTO");
+ 	print_flag(t, &flags, CAN_CTRLMODE_XL_TDC_MANUAL, "XL-TDC-MANUAL");
++	print_flag(t, &flags, CAN_CTRLMODE_XL_RRS, "XL-RRS");
+ 
+ 	if (flags)
+ 		print_hex(t, NULL, "%x", flags);
+ 
+ 	close_json_array(t, "> ");
+@@ -333,10 +335,14 @@ static int can_parse_opt(struct link_util *lu, int argc, char **argv,
+ 					   CAN_CTRLMODE_XL_TDC_MANUAL;
+ 			} else {
+ 				invarg("\"xtdc-mode\" must be either of \"auto\", \"manual\" or \"off\"",
+ 					*argv);
+ 			}
++		} else if (matches(*argv, "xlrrs") == 0) {
++			NEXT_ARG();
++			set_ctrlmode("xlrrs", *argv, &cm,
++				     CAN_CTRLMODE_XL_RRS);
+ 		} else if (matches(*argv, "restart") == 0) {
+ 			__u32 val = 1;
+ 
+ 			addattr32(n, 1024, IFLA_CAN_RESTART, val);
+ 		} else if (matches(*argv, "restart-ms") == 0) {
+-- 
+2.47.2
+

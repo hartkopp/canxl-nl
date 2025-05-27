@@ -1,0 +1,39 @@
+From 24ca3911fa6a7f546583d528ebf12827cb14dddf Mon Sep 17 00:00:00 2001
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+Date: Tue, 20 May 2025 09:04:18 +0200
+Subject: [PATCH 09/11] can: canxl: support CAN XL error signalling switching
+
+For CAN CC and CAN FD the generation of error frames on the CAN bus in the
+case of detected protocol violations is a mandatory feature.
+With CAN XL utilizing a switchable CAN XL transceiver with a different
+physical layer the error signalling is not possible when the transceiver
+is switched into the new data mode physical layer.
+When operating a CAN controller in CAN CC/FD/XL mode (XL = enabled!) with
+a 'normal' CAN (FD) transceiver that does not switch the physical layer in
+the data section the user can decide whether the error signalling is
+enabled/disabled for all CAN protocols.
+
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+---
+ include/uapi/linux/can/netlink.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/uapi/linux/can/netlink.h b/include/uapi/linux/can/netlink.h
+index 652576234f63..163a6167264e 100644
+--- a/include/uapi/linux/can/netlink.h
++++ b/include/uapi/linux/can/netlink.h
+@@ -106,10 +106,11 @@ struct can_ctrlmode {
+ #define CAN_CTRLMODE_XL			0x800	/* CAN XL mode */
+ #define CAN_CTRLMODE_XL_TDC_AUTO	0x1000	/* XL transceiver automatically calculates TDCV */
+ #define CAN_CTRLMODE_XL_TDC_MANUAL	0x2000	/* XL TDCV is manually set up by user */
+ #define CAN_CTRLMODE_XL_RRS		0x4000	/* XL enable RRS bit access */
+ #define CAN_CTRLMODE_XL_TRX		0x8000  /* XL switch trx in data phase */
++#define CAN_CTRLMODE_XL_ERR_SIGNAL	0x10000	/* XL error signalling */
+ 
+ /*
+  * CAN device statistics
+  */
+ struct can_device_stats {
+-- 
+2.47.2
+

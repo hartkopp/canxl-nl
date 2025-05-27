@@ -1,0 +1,35 @@
+From b75b10447bd367b57ef43ec23f14ffe4d0e4f1b7 Mon Sep 17 00:00:00 2001
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+Date: Sun, 1 Dec 2024 18:36:27 +0100
+Subject: [PATCH 08/11] can: canxl: support CAN XL transceiver switching in
+ data phase
+
+In the CAN XL data phase the CAN XL controller can advise the CAN XL
+transceiver to switch the physical layer.
+To enable this feature the CAN_CTRLMODE_XL_TRX has to be set in the
+driver control mode.
+
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+---
+ include/uapi/linux/can/netlink.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/uapi/linux/can/netlink.h b/include/uapi/linux/can/netlink.h
+index 55b8374ab094..652576234f63 100644
+--- a/include/uapi/linux/can/netlink.h
++++ b/include/uapi/linux/can/netlink.h
+@@ -105,10 +105,11 @@ struct can_ctrlmode {
+ #define CAN_CTRLMODE_TDC_MANUAL		0x400	/* FD TDCV is manually set up by user */
+ #define CAN_CTRLMODE_XL			0x800	/* CAN XL mode */
+ #define CAN_CTRLMODE_XL_TDC_AUTO	0x1000	/* XL transceiver automatically calculates TDCV */
+ #define CAN_CTRLMODE_XL_TDC_MANUAL	0x2000	/* XL TDCV is manually set up by user */
+ #define CAN_CTRLMODE_XL_RRS		0x4000	/* XL enable RRS bit access */
++#define CAN_CTRLMODE_XL_TRX		0x8000  /* XL switch trx in data phase */
+ 
+ /*
+  * CAN device statistics
+  */
+ struct can_device_stats {
+-- 
+2.47.2
+

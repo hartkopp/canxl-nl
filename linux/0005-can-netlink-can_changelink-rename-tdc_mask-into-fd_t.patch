@@ -1,0 +1,71 @@
+From 73e33ad3ac8133be29292e4a825a75a20701f375 Mon Sep 17 00:00:00 2001
+From: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+Date: Wed, 13 Nov 2024 01:50:20 +0900
+Subject: [PATCH 05/11] can: netlink: can_changelink(): rename tdc_mask into
+ fd_tdc_flag_provided
+
+The only purpose of the tdc_mask variable is to check whether or not
+any tdc flags (CAN_CTRLMODE_TDC_{AUTO,MANUAL}) were provided. At this
+point, the actual value of the flags do no matter any more because
+these can be deduced from some other information.
+
+Rename the tdc_mask variable into fd_tdc_flag_provided to make this
+more explicit. Note that the fd_ prefix is added in preparation of the
+introduction of CAN XL.
+
+Signed-off-by: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+---
+ drivers/net/can/dev/netlink.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/can/dev/netlink.c b/drivers/net/can/dev/netlink.c
+index 16b0f326c143..13826e8a707b 100644
+--- a/drivers/net/can/dev/netlink.c
++++ b/drivers/net/can/dev/netlink.c
+@@ -187,11 +187,11 @@ static int can_tdc_changelink(struct can_priv *priv, const struct nlattr *nla,
+ static int can_changelink(struct net_device *dev, struct nlattr *tb[],
+ 			  struct nlattr *data[],
+ 			  struct netlink_ext_ack *extack)
+ {
+ 	struct can_priv *priv = netdev_priv(dev);
+-	u32 tdc_mask = 0;
++	bool fd_tdc_flag_provided = false;
+ 	int err;
+ 
+ 	/* We need synchronization with dev->stop() */
+ 	ASSERT_RTNL();
+ 
+@@ -232,15 +232,15 @@ static int can_changelink(struct net_device *dev, struct nlattr *tb[],
+ 			       sizeof(priv->fd.data_bittiming));
+ 			priv->ctrlmode &= ~CAN_CTRLMODE_FD_TDC_MASK;
+ 			memset(&priv->fd.tdc, 0, sizeof(priv->fd.tdc));
+ 		}
+ 
+-		tdc_mask = cm->mask & CAN_CTRLMODE_FD_TDC_MASK;
++		fd_tdc_flag_provided = cm->mask & CAN_CTRLMODE_FD_TDC_MASK;
+ 		/* CAN_CTRLMODE_TDC_{AUTO,MANUAL} are mutually
+ 		 * exclusive: make sure to turn the other one off
+ 		 */
+-		if (tdc_mask)
++		if (fd_tdc_flag_provided)
+ 			priv->ctrlmode &= cm->flags | ~CAN_CTRLMODE_FD_TDC_MASK;
+ 	}
+ 
+ 	if (data[IFLA_CAN_BITTIMING]) {
+ 		struct can_bittiming bt;
+@@ -340,11 +340,11 @@ static int can_changelink(struct net_device *dev, struct nlattr *tb[],
+ 						 extack);
+ 			if (err) {
+ 				priv->ctrlmode &= ~CAN_CTRLMODE_FD_TDC_MASK;
+ 				return err;
+ 			}
+-		} else if (!tdc_mask) {
++		} else if (!fd_tdc_flag_provided) {
+ 			/* Neither of TDC parameters nor TDC flags are
+ 			 * provided: do calculation
+ 			 */
+ 			can_calc_tdco(&priv->fd.tdc, priv->fd.tdc_const, &dbt,
+ 				      &priv->ctrlmode, priv->ctrlmode_supported);
+-- 
+2.47.2
+

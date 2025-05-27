@@ -1,0 +1,37 @@
+From 6a84740357736c5b338c3fa9e42cec73dc1cbf9b Mon Sep 17 00:00:00 2001
+From: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+Date: Wed, 13 Nov 2024 01:50:17 +0900
+Subject: [PATCH 02/11] can: netlink: replace tabulation by space in assignment
+
+commit cfd98c838cbe ("can: netlink: move '=' operators back to
+previous line (checkpatch fix)") inadvertently introduced a tabulation
+between the IFLA_CAN_DATA_BITTIMING_CONST array index and the equal
+sign.
+
+Remove it.
+
+Signed-off-by: Vincent Mailhol <mailhol.vincent@wanadoo.fr>
+---
+ drivers/net/can/dev/netlink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/can/dev/netlink.c b/drivers/net/can/dev/netlink.c
+index a36842ace084..4ebd5181aea9 100644
+--- a/drivers/net/can/dev/netlink.c
++++ b/drivers/net/can/dev/netlink.c
+@@ -16,11 +16,11 @@ static const struct nla_policy can_policy[IFLA_CAN_MAX + 1] = {
+ 	[IFLA_CAN_BITTIMING] = { .len = sizeof(struct can_bittiming) },
+ 	[IFLA_CAN_BITTIMING_CONST] = { .len = sizeof(struct can_bittiming_const) },
+ 	[IFLA_CAN_CLOCK] = { .len = sizeof(struct can_clock) },
+ 	[IFLA_CAN_BERR_COUNTER] = { .len = sizeof(struct can_berr_counter) },
+ 	[IFLA_CAN_DATA_BITTIMING] = { .len = sizeof(struct can_bittiming) },
+-	[IFLA_CAN_DATA_BITTIMING_CONST]	= { .len = sizeof(struct can_bittiming_const) },
++	[IFLA_CAN_DATA_BITTIMING_CONST] = { .len = sizeof(struct can_bittiming_const) },
+ 	[IFLA_CAN_TERMINATION] = { .type = NLA_U16 },
+ 	[IFLA_CAN_TDC] = { .type = NLA_NESTED },
+ 	[IFLA_CAN_CTRLMODE_EXT] = { .type = NLA_NESTED },
+ };
+ 
+-- 
+2.47.2
+
